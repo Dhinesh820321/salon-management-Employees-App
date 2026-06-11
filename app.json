@@ -1,0 +1,69 @@
+{
+  "expo": {
+    "name": "Best & White",
+    "slug": "employees-app",
+    "version": "1.0.1",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-new.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A1628"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.salonmaster.employees",
+      "icon": "./assets/icon.png",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "We need your location for attendance verification",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "We need your location for attendance verification"
+      }
+    },
+    "android": {
+      "usesCleartextTraffic": true,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0A1628"
+      },
+      "package": "com.salonmaster.employees",
+      "versionCode": 2,
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Employees App to use your location for attendance."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Employees App to access your photos for profile picture.",
+          "cameraPermission": "Allow Employees App to use camera for profile picture."
+        }
+      ],
+      "expo-secure-store"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "0e77e20c-a3dc-4eab-bed5-569b2f1dd94c"
+      }
+    },
+    "owner": "dhineshkannadasan"
+  }
+}
