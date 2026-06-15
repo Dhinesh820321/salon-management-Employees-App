@@ -77,12 +77,13 @@ export default function ProfileScreen({ navigation }) {
 
   const loadProfileImage = async () => {
     console.log('[Profile] Loading profile image...');
-    console.log('[Profile] User from auth:', user?.profile_image);
+    console.log('[Profile] User from auth:', user?.profile_image || user?.profile_photo);
     
     // Load from user in auth context first
-    if (user?.profile_image) {
-      console.log('[Profile] Setting from user:', user.profile_image);
-      setProfileImageUri(user.profile_image);
+    if (user?.profile_image || user?.profile_photo) {
+      const img = user.profile_image || user.profile_photo;
+      console.log('[Profile] Setting from user:', img);
+      setProfileImageUri(img);
       return;
     }
     
@@ -90,9 +91,9 @@ export default function ProfileScreen({ navigation }) {
     const savedUser = await AsyncStorage.getItem('@auth_user');
     if (savedUser) {
       const parsed = JSON.parse(savedUser);
-      console.log('[Profile] Saved user:', parsed?.profile_image);
-      if (parsed?.profile_image) {
-        setProfileImageUri(parsed.profile_image);
+      console.log('[Profile] Saved user:', parsed?.profile_image || parsed?.profile_photo);
+      if (parsed?.profile_image || parsed?.profile_photo) {
+        setProfileImageUri(parsed.profile_image || parsed.profile_photo);
       }
     }
   };
@@ -140,13 +141,13 @@ export default function ProfileScreen({ navigation }) {
     setUploading(true);
     try {
       const formData = new FormData();
-      formData.append('image', {
+      formData.append('photo', {
         uri,
         type: 'image/jpeg',
         name: 'profile-photo.jpg',
       });
 
-      const response = await fetch(`${API_URL}/auth/upload-profile-image`, {
+      const response = await fetch(`${API_URL}/auth/profile/photo`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${await AsyncStorage.getItem('@auth_token')}`,
@@ -157,7 +158,10 @@ export default function ProfileScreen({ navigation }) {
       const data = await response.json();
       
       if (data.success) {
-        const serverImageUrl = data.data.profile_image;
+        // Cloudinary URL is returned in data.profile_photo (or data.data.profile_photo depending on backend structure)
+        // Since backend routes return successResponse or direct json, let's support both
+        const resultData = data.data || data;
+        const serverImageUrl = resultData.profile_photo || resultData.profile_image;
         console.log('[Profile] Server image URL:', serverImageUrl);
         
         // Update local state for immediate display
@@ -165,7 +169,11 @@ export default function ProfileScreen({ navigation }) {
         
         // Update user in AuthContext + AsyncStorage
         if (user) {
-          const updatedUserData = { ...user, profile_image: serverImageUrl };
+          const updatedUserData = { 
+            ...user, 
+            profile_image: serverImageUrl,
+            profile_photo: serverImageUrl
+          };
           await updateUser(updatedUserData);
         }
         
@@ -193,12 +201,73 @@ export default function ProfileScreen({ navigation }) {
     );
   };
 
+  const handlePhotoPress = () => {
+    Alert.alert(
+      'Profile Photo',
+      'What would you like to do?',
+      [
+        {
+          text: 'Change Photo',
+          onPress: showImageOptions,
+        },
+        {
+          text: 'Remove Photo',
+          style: 'destructive',
+          onPress: handleRemovePhoto,
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+      ]
+    );
+  };
+
+  const handleRemovePhoto = async () => {
+    setUploading(true);
+    try {
+      const token = await AsyncStorage.getItem('@auth_token');
+      
+      const response = await fetch(`${API_URL}/auth/profile/photo`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update local state
+        setProfileImageUri(null);
+        
+        // Update user in AuthContext + AsyncStorage
+        if (user) {
+          const updatedUserData = {
+            ...user,
+            profile_photo: null,
+            profile_image: null
+          };
+          await updateUser(updatedUserData);
+        }
+        Alert.alert('Success', 'Profile photo removed successfully!');
+      } else {
+        Alert.alert('Error', data.message || 'Failed to remove photo');
+      }
+    } catch (error) {
+      console.error('Remove photo error:', error);
+      Alert.alert('Error', 'Failed to remove photo. Try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const profileImageFullUri = useMemo(() => {
-    const imagePath = profileImageUri || user?.profile_image;
+    const imagePath = profileImageUri || user?.profile_image || user?.profile_photo;
     if (!imagePath) return null;
     if (imagePath.startsWith('http')) return imagePath;
     return `${BASE_URL}${imagePath}`;
-  }, [profileImageUri, user?.profile_image]);
+  }, [profileImageUri, user?.profile_image, user?.profile_photo]);
 
   const handleLogout = () => {
     Alert.alert(
@@ -217,7 +286,7 @@ export default function ProfileScreen({ navigation }) {
         <View className="bg-white px-5 py-8 items-center border-b border-gray-100">
           <TouchableOpacity 
             className="relative" 
-            onPress={showImageOptions}
+            onPress={handlePhotoPress}
             disabled={uploading}
           >
             {uploading ? (
